@@ -8,7 +8,7 @@
   },
   "main": "getsmart.js",
   "engines": {
-    "node": ">=0.4.7"
+    "node": ">= 0.4.1"
   },
   "dependencies": {
     "uglify-js": ">=1.2.5"
