@@ -1,0 +1,17 @@
+{
+  "author": "Glen Ashley Peterson <glen@screenrev.com> (http://screenrev.com/)",
+  "name": "getsmart-js",
+  "description": "Compresses, minifies and concats source javascript at runtime.",
+  "version": "0.1.0",
+  "repository": {
+    "url": ""
+  },
+  "main": "getsmart.js",
+  "engines": {
+    "node": "~v0.4.7"
+  },
+  "dependencies": {
+    "uglify-js": ">=1.2.5"
+  },
+  "devDependencies": {}
+}
