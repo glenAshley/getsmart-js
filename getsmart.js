@@ -32,7 +32,6 @@ module.exports = function GetSmartJS(options) {
   if ( ! options.src || ! options.dest) throw new Error('GetSmartJS requires "src" and "dest" directory');
 
 	
-	
 	// the middleware
 	return function(req, res, next) {
 		
@@ -115,7 +114,7 @@ module.exports = function GetSmartJS(options) {
 			}
 			catch (error) {
 				// the folder doesn't exist, try the public file
-				console.log('GetSmartJS: file or directory doesn\'t exist', filePath)
+				// console.log('GetSmartJS: file or directory doesn\'t exist', filePath)
 				next();
 				return;
 			}
@@ -159,7 +158,7 @@ module.exports = function GetSmartJS(options) {
 		}
 		catch (error) {
 			// directory doesn't exist, yet
-			fs.mkdirSync(directory, '755');
+			makeDirectory(directory);
 		}
 		
 		// save to destination folder
@@ -188,7 +187,10 @@ module.exports = function GetSmartJS(options) {
  */
 
 
-// get a list of all files in the directory
+
+/*
+ * get a list of all files in the directory
+ */
 function getFileList(path) {
 	var paths = fs.readdirSync(path),
 	files = [],
@@ -220,3 +222,39 @@ function getFileList(path) {
 	return files;
 }
 
+
+
+/*
+ * Make a directory, recursively
+ */
+function makeDirectory(path, root){
+	// default for root
+	if ( ! root) root = '';
+	
+	// remove the trailing slash (/) from path
+	if (path.substr(path.length - 1) == '/') path = path.substr(0, path.length - 1);
+	
+	var stats,
+	// split the path into its parts
+	branches = path.split('/');
+	
+	// add the first part of the path
+	root += branches.shift() + '/';
+	
+	// check if path root exists
+	try {
+		stats = fs.statSync(root);
+	}
+	catch (error) {
+		// directory doesn't exist, yet
+		try {
+			fs.mkdirSync(root, '755');
+		}
+		catch (error) {
+			console.log('GetSmartJS: Couldn\'t create directory:', root);
+		}
+	}
+	
+	// next branch (recursive)
+	if (branches.length) makeDirectory(branches.join('/'), root);
+};
