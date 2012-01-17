@@ -143,7 +143,7 @@ module.exports = function GetSmartJS(options) {
 		}
 		
 		// compress the file if not already minified
-		if (options.compress && reqUrl.substr(reqUrl.length - 7) != '.min.js') {
+		if (options.compress && reqUrl.substr(reqUrl.length - 6) != 'min.js') {
 			data = jsp.parse(data); // parse code and get the initial AST
 			data = pro.ast_mangle(data); // get a new AST with mangled names
 			data = pro.ast_squeeze(data); // get an AST with compression optimizations
