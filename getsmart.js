@@ -9,6 +9,7 @@
 
 var jsp = require('uglify-js').parser,
 pro = require('uglify-js').uglify,
+_ = require('underscore'),
 fs = require('fs'),
 isProduction = process.env.NODE_ENV == 'production',
 defaults = {
@@ -85,7 +86,7 @@ module.exports = function GetSmartJS(options) {
 				}
 				
 				// get the list of files
-				fileList = getFileList(filePath);
+				fileList = _.sortBy(getFileList(filePath), function(name){return name});
 				
 				// check if any file has changed
 				for (i = fileList.length - 1; i >= 0; i--) {
