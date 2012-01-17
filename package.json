@@ -2,7 +2,7 @@
   "author": "Glen Ashley Peterson <glen@screenrev.com> (http://screenrev.com/)",
   "name": "getsmart-js",
   "description": "Middleware for express.js. Compresses, minifies and concats JavaScript at runtime.",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "repository": {
     "url": "git@github.com:glenAshley/getsmart-js.git"
   },
