@@ -11,6 +11,7 @@ var jsp = require('uglify-js').parser,
 pro = require('uglify-js').uglify,
 _ = require('underscore'),
 fs = require('fs'),
+coffeescript = require('coffee-script'),
 isProduction = process.env.NODE_ENV == 'production',
 defaults = {
 	isProduction: isProduction,
@@ -21,13 +22,7 @@ cache = {};
 
 module.exports = function GetSmartJS(options) {
 	// setup
-	
-  options = options || {};
-	
-	// apply the defaults
-	for (var name in defaults){
-		if ( ! options[name]) options[name] = defaults[name]; 
-	};
+	options = _.extend(defaults, options || {});
 	
   // Source and destination dir required
   if ( ! options.src || ! options.dest) throw new Error('GetSmartJS requires "src" and "dest" directory');
@@ -52,27 +47,41 @@ module.exports = function GetSmartJS(options) {
 		
 		// for production, check the cache to see if we've already processed this file
 		if (options.isProduction && cache[reqUrl]) {
-			// use the public version
-			next();
+			// serve cached version
+			serveCached(res, reqUrl)
 			return;
 		}
 		
 		// does the file exist in the source path?
-		try	{
-			stats = fs.statSync(options.src + reqUrl);
-			
-			// if source file hasn't changed since last request
-			if (cache[reqUrl] && stats.mtime.toString() == cache[reqUrl]) {
-				// serve the public file
-				next();
-				return;
+		if (stats = fileExists(options.src + reqUrl)){
+
+			// if source file hasn't changed
+			if (cache[reqUrl] && stats.mtime.toString() == cache[reqUrl].mtime){
+				// serve cached version
+				serveCached(res, reqUrl)
+				return
 			}
-			
-			// update the cache
-			cache[reqUrl] = stats.mtime.toString();
+
+			// otherwise update mod time
+			cache[reqUrl] = cache[reqUrl] || {}
+			cache[reqUrl].mtime = stats.mtime.toString()
 		}
-		catch (error) {
-			// the source file doesn't exist, check if a folder exists
+		// does a .coffee file exist
+		else if(stats = fileExists(options.src + reqUrl.replace(/\.js$/, '.coffee'))){
+
+			// if source file hasn't changed
+			if (cache[reqUrl] && stats.mtime.toString() == cache[reqUrl].mtime){
+				// serve cached version
+				serveCached(res, reqUrl)
+				return
+			}
+
+			// otherwise update mod time
+			cache[reqUrl] = cache[reqUrl] || {}
+			cache[reqUrl].mtime = stats.mtime.toString()
+			cache[reqUrl].coffee = true
+		}
+		else { // no file exists, try folders
 			try {
 				filePath = options.src + reqUrl.substring(0, reqUrl.length - 3); // cut off the '.js'
 				stats = fs.statSync(filePath);
@@ -115,7 +124,7 @@ module.exports = function GetSmartJS(options) {
 			}
 			catch (error) {
 				// the folder doesn't exist, try the public file
-				// console.log('GetSmartJS: file or directory doesn\'t exist', filePath)
+				console.log('GetSmartJS: file or directory doesn\'t exist', filePath)
 				next();
 				return;
 			}
@@ -127,21 +136,31 @@ module.exports = function GetSmartJS(options) {
 			for (i = 0; i < fileList.length; i++) {
 				file = fileList[i];
 				
-				// update the cache stamp
-				stats = fs.statSync(file);
-				cache[file] = stats.mtime.toString();
-			
 				// concat
-				data += fs.readFileSync(file, 'utf8') + '\n\n';
+				if (file.substr(-3) == '.js'){
+					data += fs.readFileSync(file, 'utf8') + ';\n\n';
+				}
+				if (file.substr(-7) == '.coffee'){
+					data += coffeescript.compile(fs.readFileSync(file, 'utf8')  + ';\n\n')
+				}
 			}
 			
 			// register the cache for the request url
-			cache[reqUrl] = true;
+			cache[reqUrl] = true
 		}
 		else {
-			data = fs.readFileSync(options.src + reqUrl, 'utf8');
+			if (cache[reqUrl].coffee){
+				data = fs.readFileSync(options.src + reqUrl.replace(/\.js$/, '.coffee'), 'utf8');
+			}
+			else {
+				data = fs.readFileSync(options.src + reqUrl, 'utf8');
+			}
 		}
 		
+		if (cache[reqUrl].coffee){
+			data = coffeescript.compile(data)
+		}
+
 		// compress the file if not already minified
 		if (options.compress && reqUrl.substr(reqUrl.length - 6) != 'min.js') {
 			data = jsp.parse(data); // parse code and get the initial AST
@@ -149,27 +168,8 @@ module.exports = function GetSmartJS(options) {
 			data = pro.ast_squeeze(data); // get an AST with compression optimizations
 			data = pro.gen_code(data);
 		}
-		
-		// get the directory part of the string
-		var directory = options.dest + reqUrl.substring(0, reqUrl.lastIndexOf('/') + 1);
-		
-		// check destination folder exists
-		try {
-			stats = fs.statSync(directory);
-		}
-		catch (error) {
-			// directory doesn't exist, yet
-			makeDirectory(directory);
-		}
-		
-		// save to destination folder
-		fs.writeFileSync(options.dest + reqUrl, data, 'utf8', function(error) {
-			if (error) {
-				console.log('GetSmartJS: write error', reqUrl, error);
-				res.send(404);
-				return;
-			};
-		});
+
+		cache[reqUrl].data = data
 	
 		// send the file to browser (don't wait for write to finish)
 		res.writeHead(200, {'Content-Type': 'application/javascript'});
@@ -259,3 +259,26 @@ function makeDirectory(path, root){
 	// next branch (recursive)
 	if (branches.length) makeDirectory(branches.join('/'), root);
 };
+
+
+/*
+	Serve the cached version from memory
+*/
+function serveCached(res, url){
+	res.writeHead(200, {'Content-Type': 'application/javascript'})
+	res.end(cache[url].data)
+}
+
+/*
+	Checks if a file exists at a given path
+*/
+function fileExists(path){
+	try	{
+		var stats = fs.statSync(path)
+		return stats
+	}
+	catch(error) {
+		return false
+	}
+
+}
