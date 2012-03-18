@@ -1,7 +1,7 @@
 getsmart-js
 ===========
 
-Middleware for Express.js, a Node.js framework. Compresses, minifies and concats JavaScript at runtime.
+Middleware for Express.js, a Node.js framework. Compresses, minifies and concats JavaScript and CoffeeScript at runtime.
 
 
 What it does
