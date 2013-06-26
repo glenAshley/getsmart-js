@@ -24,8 +24,8 @@ module.exports = function GetSmartJS(options) {
 	// setup
 	options = _.extend(defaults, options || {});
 	
-  // Source and destination dir required
-  if ( ! options.src || ! options.dest) throw new Error('GetSmartJS requires "src" and "dest" directory');
+  // Source dir required
+  if ( ! options.src ) throw new Error('GetSmartJS requires "src" directory');
 
 	
 	// the middleware

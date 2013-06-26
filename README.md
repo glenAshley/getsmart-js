@@ -27,14 +27,13 @@ Usgage
 Use getsmart-js as a middleware for Express.js.
 
 eg.
-app.configure(function(){
-	app.use(require('getsmart-js')({
-		compress: true,
-		isProduction: false,
-		src: __dirname,
-		dest: __dirname + '/public'
-	}));
-};
+	app.configure(function(){
+		app.use(require('getsmart-js')({
+			compress: true,
+			isProduction: false,
+			src: __dirname
+		}));
+	};
 
 
 Options
@@ -45,8 +44,6 @@ compress Boolean (optional) Whether to compress & minify or not. Defaults to NOD
 isProduction Boolean (optional) Will only check modification dates the first run if true. Defaults to NODE_ENV == 'production'.
 
 src String (required) The source directory of the source JavaScript files.
-
-dest String (required) The destination directory for the processed files.
 
 
 
