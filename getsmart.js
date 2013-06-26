@@ -36,10 +36,11 @@ module.exports = function GetSmartJS(options) {
 		stats, filePath, fileList, i, file,
 		data = '',
 		isPathFile = false,
-		pathFileChanged = false;
+		pathFileChanged = false,
+		requestMethod = req.originalMethod || req.method;
 		
-		// if the url doesn't end in .js
-		if (req.originalMethod != 'GET' || reqUrl.substr(-3) != '.js'){
+		// if not a GET request or the url doesn't end in .js
+		if (requestMethod != 'GET' || reqUrl.substr(-3) != '.js'){
 			// no .js, move to next middleware
 			next();
 			return;
