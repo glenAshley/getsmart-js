@@ -19,7 +19,7 @@ eg. Request URL is "app.js", but "app.js" is not in the source folder, so getsma
 Run	"npm install getsmart-js" to install the module.
 
 
-# Usage
+## Usage
 
 Use getsmart-js as a middleware for Express.js.
 
@@ -33,7 +33,7 @@ Use getsmart-js as a middleware for Express.js.
 	};
 ```
 
-# Options
+## Options
 
 compress Boolean (optional) Whether to compress & minify or not. Defaults to NODE_ENV == 'production'.
 
@@ -43,7 +43,7 @@ src String (required) The source directory of the source JavaScript files.
 
 
 
-# Notes on Directories
+## Notes on Directories
 
 The file paths will include the request URL – so you must keep this in mind when setting the options.
 
