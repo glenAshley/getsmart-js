@@ -1,11 +1,10 @@
-getsmart-js
-===========
+# getsmart-js
+
 
 Middleware for Express.js, a Node.js framework. Compresses, minifies and concats JavaScript and CoffeeScript at runtime.
 
 
-What it does
-------------
+## What it does
 
 getsmart-js intercepts GET requests for files ending in ".js". It checks to see if the modification date of the source file has changed since the last request, and updates the file if it has.
 
@@ -15,18 +14,16 @@ If a request is made, and the source file is not found, getsmart-js looks for a 
 eg. Request URL is "app.js", but "app.js" is not in the source folder, so getsmart-js looks for a folder named "app".
 
 
-Installation
-------------
+## Installation
 
 Run	"npm install getsmart-js" to install the module.
 
 
-Usgage
-------
+# Usage
 
 Use getsmart-js as a middleware for Express.js.
 
-eg.
+```js
 	app.configure(function(){
 		app.use(require('getsmart-js')({
 			compress: true,
@@ -34,10 +31,9 @@ eg.
 			src: __dirname
 		}));
 	};
+```
 
-
-Options
--------
+# Options
 
 compress Boolean (optional) Whether to compress & minify or not. Defaults to NODE_ENV == 'production'.
 
@@ -47,8 +43,7 @@ src String (required) The source directory of the source JavaScript files.
 
 
 
-Notes on Directories
---------------------
+# Notes on Directories
 
 The file paths will include the request URL – so you must keep this in mind when setting the options.
 
