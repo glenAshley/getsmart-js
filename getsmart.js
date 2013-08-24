@@ -7,101 +7,96 @@
  */
 
 
-var jsp = require('uglify-js').parser,
-pro = require('uglify-js').uglify,
-_ = require('underscore'),
-fs = require('fs'),
-coffeescript = require('coffee-script'),
-isProduction = process.env.NODE_ENV == 'production',
-defaults = {
+var jsp = require('uglify-js').parser;
+var pro = require('uglify-js').uglify;
+var _ = require('underscore');
+var fs = require('fs');
+var coffeescript = require('coffee-script');
+var isProduction = process.env.NODE_ENV == 'production';
+var defaults = {
 	isProduction: isProduction,
 	compress: isProduction
-},
-cache = {};
+};
+var cache = {};
 
 
 module.exports = function GetSmartJS(options) {
-	// setup
 	options = _.extend(defaults, options || {});
-	
-  // Source dir required
-  if ( ! options.src ) throw new Error('GetSmartJS requires "src" directory');
 
-	
-	// the middleware
+	// Source dir required
+	if (! options.src) throw new Error('GetSmartJS requires "src" directory');
+
 	return function(req, res, next) {
-		
 		// vars
-		var reqUrl = req.originalUrl.split('?')[0],
-		stats, filePath, fileList, i, file,
-		data = '',
-		isPathFile = false,
-		pathFileChanged = false,
-		requestMethod = req.originalMethod || req.method;
-		
+		var reqUrl = req.originalUrl.split('?')[0];
+		var stats, filePath, fileList, i, file;
+		var data = '';
+		var isPathFile = false;
+		var pathFileChanged = false;
+		var requestMethod = req.originalMethod || req.method;
+
 		// if not a GET request or the url doesn't end in .js
-		if (requestMethod != 'GET' || reqUrl.substr(-3) != '.js'){
+		if (requestMethod != 'GET' || reqUrl.substr(-3) != '.js') {
 			// no .js, move to next middleware
 			next();
 			return;
 		}
-		
+
 		// for production, check the cache to see if we've already processed this file
 		if (options.isProduction && cache[reqUrl]) {
 			// serve cached version
-			serveCached(res, reqUrl)
+			serveCached(res, reqUrl);
 			return;
 		}
-		
-		// does the file exist in the source path?
-		if (stats = fileExists(options.src + reqUrl)){
 
+		// does the file exist in the source path?
+		if (stats = fileExists(options.src + reqUrl)) {
 			// if source file hasn't changed
 			if (cache[reqUrl] && stats.mtime.toString() == cache[reqUrl].mtime){
 				// serve cached version
-				serveCached(res, reqUrl)
-				return
+				serveCached(res, reqUrl);
+				return;
 			}
 
 			// otherwise update mod time
-			cache[reqUrl] = cache[reqUrl] || {}
-			cache[reqUrl].mtime = stats.mtime.toString()
+			cache[reqUrl] = cache[reqUrl] || {};
+			cache[reqUrl].mtime = stats.mtime.toString();
 		}
 		// does a .coffee file exist
-		else if(stats = fileExists(options.src + reqUrl.replace(/\.js$/, '.coffee'))){
-
+		else if (stats = fileExists(options.src + reqUrl.replace(/\.js$/, '.coffee'))) {
 			// if source file hasn't changed
-			if (cache[reqUrl] && stats.mtime.toString() == cache[reqUrl].mtime){
+			if (cache[reqUrl] && stats.mtime.toString() == cache[reqUrl].mtime) {
 				// serve cached version
-				serveCached(res, reqUrl)
-				return
+				serveCached(res, reqUrl);
+				return;
 			}
 
 			// otherwise update mod time
-			cache[reqUrl] = cache[reqUrl] || {}
-			cache[reqUrl].mtime = stats.mtime.toString()
-			cache[reqUrl].coffee = true
+			cache[reqUrl] = cache[reqUrl] || {};
+			cache[reqUrl].mtime = stats.mtime.toString();
+			cache[reqUrl].coffee = true;
 		}
-		else { // no file exists, try folders
+		else {
+			// no file exists, try folders
 			try {
 				filePath = options.src + reqUrl.substring(0, reqUrl.length - 3); // cut off the '.js'
 				stats = fs.statSync(filePath);
 				isPathFile = stats.isDirectory();
-			
-				if ( ! isPathFile) {
+
+				if (! isPathFile) {
 					// try the public file
-					console.log('GetSmartJS: file doesn\'t exist', reqUrl)
+					console.log('GetSmartJS: file doesn\'t exist', reqUrl);
 					next();
 					return;
 				}
-				
+
 				// get the list of files
-				fileList = _.sortBy(getFileList(filePath), function(name){return name});
-				
+				fileList = _.sortBy(getFileList(filePath), function(name){return name;});
+
 				// check if any file has changed
 				for (i = fileList.length - 1; i >= 0; i--) {
 					file = fileList[i];
-					
+
 					if (cache[file]) {
 						stats = fs.statSync(file);
 
@@ -125,29 +120,29 @@ module.exports = function GetSmartJS(options) {
 			}
 			catch (error) {
 				// the folder doesn't exist, try the public file
-				console.log('GetSmartJS: file or directory doesn\'t exist', filePath)
+				console.log('GetSmartJS: file or directory doesn\'t exist', filePath);
 				next();
 				return;
 			}
 		}
-		
-		
+
+
 		// now we read the files
 		if (isPathFile) {
 			for (i = 0; i < fileList.length; i++) {
 				file = fileList[i];
-				
+
 				// concat
 				if (file.substr(-3) == '.js'){
 					data += fs.readFileSync(file, 'utf8') + ';\n\n';
 				}
 				if (file.substr(-7) == '.coffee'){
-					data += coffeescript.compile(fs.readFileSync(file, 'utf8')  + ';\n\n')
+					data += coffeescript.compile(fs.readFileSync(file, 'utf8')  + ';\n\n');
 				}
 			}
-			
+
 			// register the cache for the request url
-			cache[reqUrl] = true
+			cache[reqUrl] = true;
 		}
 		else {
 			if (cache[reqUrl].coffee){
@@ -157,9 +152,9 @@ module.exports = function GetSmartJS(options) {
 				data = fs.readFileSync(options.src + reqUrl, 'utf8');
 			}
 		}
-		
+
 		if (cache[reqUrl].coffee){
-			data = coffeescript.compile(data)
+			data = coffeescript.compile(data);
 		}
 
 		// compress the file if not already minified
@@ -170,16 +165,13 @@ module.exports = function GetSmartJS(options) {
 			data = pro.gen_code(data);
 		}
 
-		cache[reqUrl].data = data
-	
+		cache[reqUrl].data = data;
+
 		// send the file to browser (don't wait for write to finish)
 		res.writeHead(200, {'Content-Type': 'application/javascript'});
 		res.end(data);
-	}
+	};
 };
-
-
-
 
 
 
@@ -194,92 +186,50 @@ module.exports = function GetSmartJS(options) {
  * get a list of all files in the directory
  */
 function getFileList(path) {
-	var paths = fs.readdirSync(path),
-	files = [],
-	stats, item, i;
+	var paths = fs.readdirSync(path);
+	var files = [];
+	var stats, item, i;
 
 	// sort files from directories
 	for (i = paths.length - 1; i >= 0; i--) {
 		item = paths[i];
-		
-		// @todo add to blacklist
-		if (item.charAt(0) == '.') break;
-	
+
+		if (item.charAt(0) == '.') return [];
+
 		item = path + '/' + item;
-	
+
 		try {
 			stats = fs.statSync(item);
-		
-			// files
+
+			// files or directories
 			if ( ! stats.isDirectory() ) files.push(item);
-		
-			// directories – recursive function
-			else files = files.concat(getFileList(item) );
+			else files = files.concat(getFileList(item));
 		}
-		catch (error) {
+		catch (e) {
 			console.log('GetSmartJS: Couldn\'t find path:', item);
 		}
 	}
-	
+
 	return files;
 }
-
-
-
-/*
- * Make a directory, recursively
- */
-function makeDirectory(path, root){
-	// default for root
-	if ( ! root) root = '';
-	
-	// remove the trailing slash (/) from path
-	if (path.substr(path.length - 1) == '/') path = path.substr(0, path.length - 1);
-	
-	var stats,
-	// split the path into its parts
-	branches = path.split('/');
-	
-	// add the first part of the path
-	root += branches.shift() + '/';
-	
-	// check if path root exists
-	try {
-		stats = fs.statSync(root);
-	}
-	catch (error) {
-		// directory doesn't exist, yet
-		try {
-			fs.mkdirSync(root, '755');
-		}
-		catch (error) {
-			console.log('GetSmartJS: Couldn\'t create directory:', root);
-		}
-	}
-	
-	// next branch (recursive)
-	if (branches.length) makeDirectory(branches.join('/'), root);
-};
 
 
 /*
 	Serve the cached version from memory
 */
-function serveCached(res, url){
-	res.writeHead(200, {'Content-Type': 'application/javascript'})
-	res.end(cache[url].data)
+function serveCached(res, url) {
+	res.writeHead(200, {'Content-Type': 'application/javascript'});
+	res.end(cache[url].data);
 }
 
 /*
 	Checks if a file exists at a given path
 */
-function fileExists(path){
+function fileExists(path) {
 	try	{
-		var stats = fs.statSync(path)
-		return stats
+		return fs.statSync(path);
 	}
-	catch(error) {
-		return false
+	catch(e) {
+		return false;
 	}
-
 }
